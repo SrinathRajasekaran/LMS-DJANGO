@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2 class="dashboard-title">My Courses</h2>
+    
+    <div class="courses-grid">
+        {% for course_data in courses_data %}
+        <div class="course-card">
+            <div class="course-header">
+                <h3 class="course-title">{{ course_data.course.name }}</h3>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" style="width: {{ course_data.progress|floatformat:0 }}%;"></div>
+                    </div>
+                    <span class="progress-text">{{ course_data.progress|floatformat:0 }}% Complete</span>
+                </div>
+            </div>
+            
+            <p class="course-description">{{ course_data.course.description }}</p>
+            
+            <div class="modules-list">
+                <h4>Modules</h4>
+                {% for module in course_data.modules %}
+                <div class="module-item {% if module.completed %}completed{% endif %}">
+                    <div class="module-info">
+                        <h5>{{ module.module.title }}</h5>
+                        <p>{{ module.module.content }}</p>
+                    </div>
+                    {% if not module.completed %}
+                    <form method="post" action="{% url 'mark_module_complete' module.module.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-primary">Mark Complete</button>
+                    </form>
+                    {% else %}
+                    <span class="completion-badge">✓ Completed</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="course-feedback">
+                <h4>Course Feedback</h4>
+                {% if not course_data.has_feedback %}
+                <form method="post" action="{% url 'submit_feedback' course_data.course.id %}" class="feedback-form">
+                    {% csrf_token %}
+                    <div class="rating-section">
+                        <label>Rating:</label>
+                        <div class="star-rating">
+                            {% for i in '12345' %}
+                            <input type="radio" name="rating" value="{{ i }}" required id="star{{ i }}">
+                            <label for="star{{ i }}">★</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="feedback-text">
+                        <label for="feedback_text">Your Feedback:</label>
+                        <textarea name="feedback_text" id="feedback_text" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                </form>
+                {% else %}
+                <div class="feedback-submitted">
+                    <p>Your feedback has been submitted</p>
+                    <div class="submitted-rating">
+                        {% for i in course_data.feedback.rating|rjust:5 %}
+                        <span class="star {% if forloop.counter <= course_data.feedback.rating %}filled{% endif %}">★</span>
+                        {% endfor %}
+                    </div>
+                    <p class="feedback-text">{{ course_data.feedback.feedback_text }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-courses">
+            <p>No courses assigned yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+/* Root Variables */
+:root {
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    --secondary-gradient: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    --success-gradient: linear-gradient(135deg, #84cc16 0%, #22c55e 100%);
+    --warning-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 30px -3px rgba(0, 0, 0, 0.2);
+    --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Course Grid Layout */
+.courses-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 2rem;
+}
+
+/* Course Card */
+.course-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem;
+    transition: var(--transition-base);
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Course Header */
+.course-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #edf2f7;
+}
+
+.course-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+}
+
+/* Progress Section */
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.progress-bar {
+    flex-grow: 1;
+    height: 0.5rem;
+    background: #edf2f7;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-gradient);
+    border-radius: 1rem;
+    transition: width 0.8s ease;
+}
+
+.progress-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+/* Course Description */
+.course-description {
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+/* Modules List */
+.modules-list {
+    margin-top: 2rem;
+}
+
+.module-item {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid #edf2f7;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+}
+
+.module-item:hover {
+    transform: translateX(5px);
+    box-shadow: var(--shadow-md);
+}
+
+.module-item.completed {
+    border-left: 4px solid #22c55e;
+}
+
+.module-info h5 {
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* Completion Badge */
+.completion-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: var(--success-gradient);
+    color: white;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+/* Course Feedback */
+.course-feedback {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #edf2f7;
+}
+
+/* Star Rating */
+.star-rating {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    gap: 0.5rem;
+}
+
+.star-rating input {
+    display: none;
+}
+
+.star-rating label {
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #d1d5db;
+    transition: var(--transition-base);
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+    color: #fbbf24;
+    transform: scale(1.1);
+}
+
+.submitted-rating .star {
+    font-size: 1.25rem;
+    color: #d1d5db;
+}
+
+.submitted-rating .star.filled {
+    color: #fbbf24;
+    text-shadow: 0 0 2px rgba(251, 191, 36, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .courses-grid {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+    
+    .course-card {
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+</style>
+{% endblock %}
+
